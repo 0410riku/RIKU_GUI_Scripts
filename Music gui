@@ -1,0 +1,212 @@
+-- プレイヤー
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- サウンド
+local sound = Instance.new("Sound")
+sound.Parent = workspace
+sound.Looped = false
+sound.Volume = 1
+
+local isPaused = false
+local songName = ""
+local favoriteSongs = {}
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MusicPlayerGUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(0.3, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Parent = screenGui
+
+-- タイトル
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.Position = UDim2.new(0,0,0,0)
+title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+title.Text = "音楽プレイヤー"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Parent = frame
+
+-- 現在再生中
+local nowPlayingLabel = Instance.new("TextLabel")
+nowPlayingLabel.Size = UDim2.new(1,0,0,30)
+nowPlayingLabel.Position = UDim2.new(0,0,0,35)
+nowPlayingLabel.BackgroundTransparency = 1
+nowPlayingLabel.Text = "現在再生中: なし"
+nowPlayingLabel.TextColor3 = Color3.fromRGB(255,255,255)
+nowPlayingLabel.Font = Enum.Font.SourceSans
+nowPlayingLabel.TextSize = 16
+nowPlayingLabel.Parent = frame
+
+-- 音楽ID入力
+local musicIdBox = Instance.new("TextBox")
+musicIdBox.Size = UDim2.new(0.8,0,0,30)
+musicIdBox.Position = UDim2.new(0.1,0,0,70)
+musicIdBox.PlaceholderText = "rbxassetid://数字"
+musicIdBox.Text = ""
+musicIdBox.TextColor3 = Color3.fromRGB(255,255,255)
+musicIdBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+musicIdBox.Parent = frame
+
+-- 音楽名入力
+local musicNameBox = Instance.new("TextBox")
+musicNameBox.Size = UDim2.new(0.8,0,0,30)
+musicNameBox.Position = UDim2.new(0.1,0,0,110)
+musicNameBox.PlaceholderText = "曲名"
+musicNameBox.Text = ""
+musicNameBox.TextColor3 = Color3.fromRGB(255,255,255)
+musicNameBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+musicNameBox.Parent = frame
+
+-- 再生ボタン
+local playButton = Instance.new("TextButton")
+playButton.Size = UDim2.new(0.4,0,0,30)
+playButton.Position = UDim2.new(0.05,0,0,150)
+playButton.Text = "再生"
+playButton.BackgroundColor3 = Color3.fromRGB(0,170,0)
+playButton.TextColor3 = Color3.fromRGB(255,255,255)
+playButton.Parent = frame
+
+-- 停止ボタン
+local stopButton = Instance.new("TextButton")
+stopButton.Size = UDim2.new(0.4,0,0,30)
+stopButton.Position = UDim2.new(0.55,0,0,150)
+stopButton.Text = "停止"
+stopButton.BackgroundColor3 = Color3.fromRGB(170,0,0)
+stopButton.TextColor3 = Color3.fromRGB(255,255,255)
+stopButton.Parent = frame
+
+-- 一時停止 / 再開
+local pauseButton = Instance.new("TextButton")
+pauseButton.Size = UDim2.new(0.9,0,0,30)
+pauseButton.Position = UDim2.new(0.05,0,0,190)
+pauseButton.Text = "一時停止/再開"
+pauseButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+pauseButton.TextColor3 = Color3.fromRGB(255,255,255)
+pauseButton.Parent = frame
+
+-- 音量スライダー（簡易）
+local volumeBox = Instance.new("TextBox")
+volumeBox.Size = UDim2.new(0.9,0,0,30)
+volumeBox.Position = UDim2.new(0.05,0,0,230)
+volumeBox.PlaceholderText = "音量: 0〜10"
+volumeBox.Text = ""
+volumeBox.TextColor3 = Color3.fromRGB(255,255,255)
+volumeBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+volumeBox.Parent = frame
+
+-- お気に入り追加ボタン
+local favButton = Instance.new("TextButton")
+favButton.Size = UDim2.new(0.9,0,0,30)
+favButton.Position = UDim2.new(0.05,0,0,270)
+favButton.Text = "お気に入りに追加"
+favButton.BackgroundColor3 = Color3.fromRGB(100,100,0)
+favButton.TextColor3 = Color3.fromRGB(255,255,255)
+favButton.Parent = frame
+
+-- お気に入り選択ドロップダウン（簡易）
+local favDropdown = Instance.new("TextBox")
+favDropdown.Size = UDim2.new(0.9,0,0,30)
+favDropdown.Position = UDim2.new(0.05,0,0,310)
+favDropdown.PlaceholderText = "お気に入りから選択"
+favDropdown.Text = ""
+favDropdown.TextColor3 = Color3.fromRGB(255,255,255)
+favDropdown.BackgroundColor3 = Color3.fromRGB(50,50,50)
+favDropdown.Parent = frame
+
+-- コールバック
+playButton.MouseButton1Click:Connect(function()
+    local id = musicIdBox.Text
+    if id ~= "" then
+        sound.SoundId = id
+        sound:Play()
+        isPaused = false
+        songName = musicNameBox.Text
+        nowPlayingLabel.Text = "現在再生中: "..(songName ~= "" and songName or id)
+    end
+end)
+
+stopButton.MouseButton1Click:Connect(function()
+    sound:Stop()
+    isPaused = false
+    nowPlayingLabel.Text = "現在再生中: なし"
+end)
+
+pauseButton.MouseButton1Click:Connect(function()
+    if sound.IsPlaying then
+        sound:Pause()
+        isPaused = true
+        nowPlayingLabel.Text = "現在再生中: "..(songName ~= "" and songName or sound.SoundId).." (一時停止)"
+    elseif isPaused then
+        sound:Play()
+        isPaused = false
+        nowPlayingLabel.Text = "現在再生中: "..(songName ~= "" and songName or sound.SoundId)
+    end
+end)
+
+volumeBox.FocusLost:Connect(function()
+    local val = tonumber(volumeBox.Text)
+    if val then
+        sound.Volume = math.clamp(val,0,10)
+    end
+end)
+
+favButton.MouseButton1Click:Connect(function()
+    if songName ~= "" and sound.SoundId ~= "" then
+        favoriteSongs[songName] = sound.SoundId
+    end
+end)
+
+favDropdown.FocusLost:Connect(function()
+    local sel = favDropdown.Text
+    if favoriteSongs[sel] then
+        sound.SoundId = favoriteSongs[sel]
+        sound:Play()
+        isPaused = false
+        nowPlayingLabel.Text = "現在再生中: "..sel
+    end
+end)
+
+-- GUIドラッグ可能化
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+local dragInput, dragStart, startPos
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
